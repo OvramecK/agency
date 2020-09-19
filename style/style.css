@@ -1,0 +1,682 @@
+body {
+    background: #ffffff;
+}
+
+@if $enable-grid-classes {
+
+    // Single container class with breakpoint max-widths
+    .container,
+    // 100% wide container at all breakpoints
+    .container-fluid {
+        @include make-container();
+    }
+
+    // Responsive containers that are 100% wide until a breakpoint
+    @each $breakpoint,
+    $container-max-width in $container-max-widths {
+        .container-#{$breakpoint} {
+            @extend .container-fluid;
+        }
+
+        @include media-breakpoint-up($breakpoint, $grid-breakpoints) {
+            %responsive-container-#{$breakpoint} {
+                max-width: $container-max-width;
+            }
+
+            // Extend each breakpoint which is smaller or equal to the current breakpoint
+            $extend-breakpoint: true;
+
+            @each $name,
+            $width in $grid-breakpoints {
+                @if ($extend-breakpoint) {
+                    .container#{breakpoint-infix($name, $grid-breakpoints)} {
+                        @extend %responsive-container-#{$breakpoint};
+                    }
+
+                    // Once the current breakpoint is reached, stop extending
+                    @if ($breakpoint==$name) {
+                        $extend-breakpoint: false;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@if $enable-grid-classes {
+    .row {
+        @include make-row();
+    }
+
+    .no-gutters {
+        margin-right: 0;
+        margin-left : 0;
+
+        >.col,
+        >[class*="col-"] {
+            padding-right: 0;
+            padding-left : 0;
+        }
+    }
+}
+
+@if $enable-grid-classes {
+    @include make-grid-columns();
+}
+
+@mixin list-unstyled() {
+    padding-left: 0;
+    list-style  : none;
+}
+
+@each $breakpoint in map-keys($grid-breakpoints) {
+    @include media-breakpoint-up($breakpoint) {
+        $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+
+        @each $prop,
+        $abbrev in (margin: m, padding: p) {
+
+            @each $size,
+            $length in $spacers {
+                .#{$abbrev}#{$infix}-#{$size} {
+                    #{$prop}: $length !important;
+                }
+
+                .#{$abbrev}t#{$infix}-#{$size},
+                .#{$abbrev}y#{$infix}-#{$size} {
+                    #{$prop}-top: $length !important;
+                }
+
+                .#{$abbrev}r#{$infix}-#{$size},
+                .#{$abbrev}x#{$infix}-#{$size} {
+                    #{$prop}-right: $length !important;
+                }
+
+                .#{$abbrev}b#{$infix}-#{$size},
+                .#{$abbrev}y#{$infix}-#{$size} {
+                    #{$prop}-bottom: $length !important;
+                }
+
+                .#{$abbrev}l#{$infix}-#{$size},
+                .#{$abbrev}x#{$infix}-#{$size} {
+                    #{$prop}-left: $length !important;
+                }
+            }
+        }
+
+        @mixin make-container($gutter: $grid-gutter-width) {
+            width        : 100%;
+            padding-right: $gutter / 2;
+            padding-left : $gutter / 2;
+            margin-right : auto;
+            margin-left  : auto;
+        }
+
+        @mixin make-row($gutter: $grid-gutter-width) {
+            display     : flex;
+            flex-wrap   : wrap;
+            margin-right: -$gutter / 2;
+            margin-left : -$gutter / 2;
+        }
+
+        @mixin make-container-max-widths($max-widths: $container-max-widths, $breakpoints: $grid-breakpoints) {
+
+            @each $breakpoint,
+            $container-max-width in $max-widths {
+                @include media-breakpoint-up($breakpoint, $breakpoints) {
+                    max-width: $container-max-width;
+                }
+            }
+
+            @include deprecate("The `make-container-max-widths` mixin", "v4.5.2", "v5");
+        }
+
+        @mixin make-col-ready($gutter: $grid-gutter-width) {
+            position     : relative;
+            width        : 100%;
+            padding-right: $gutter / 2;
+            padding-left : $gutter / 2;
+        }
+
+        @mixin make-col($size, $columns: $grid-columns) {
+            flex     : 0 0 percentage($size / $columns);
+            // Add a `max-width` to ensure content within each column does not blow out
+            // the width of the column. Applies to IE10+ and Firefox. Chrome and Safari
+            // do not appear to require this.
+            max-width: percentage($size / $columns);
+        }
+
+        @mixin make-col-auto() {
+            flex     : 0 0 auto;
+            width    : auto;
+            max-width: 100%; // Reset earlier grid tiers
+        }
+
+        @mixin make-col-offset($size, $columns: $grid-columns) {
+            $num       : $size / $columns;
+            margin-left: if($num==0, 0, percentage($num));
+        }
+
+        @mixin row-cols($count) {
+            &>* {
+                flex     : 0 0 100% / $count;
+                max-width: 100% / $count;
+            }
+        }
+
+        .navbar {
+            position       : relative;
+            display        : flex;
+            flex-wrap      : wrap; // allow us to do the line break for collapsing content
+            align-items    : center;
+            justify-content: space-between; // space out brand from logo
+            padding        : $navbar-padding-y $navbar-padding-x;
+
+            // Because flex properties aren't inherited, we need to redeclare these first
+            // few properties so that content nested within behave properly.
+            %container-flex-properties {
+                display        : flex;
+                flex-wrap      : wrap;
+                align-items    : center;
+                justify-content: space-between;
+            }
+
+            .container,
+            .container-fluid {
+                @extend %container-flex-properties;
+            }
+
+            @each $breakpoint,
+            $container-max-width in $container-max-widths {
+                >.container#{breakpoint-infix($breakpoint, $container-max-widths)} {
+                    @extend %container-flex-properties;
+                }
+            }
+        }
+
+        .navbar-brand {
+            display       : inline-block;
+            padding-top   : $navbar-brand-padding-y;
+            padding-bottom: $navbar-brand-padding-y;
+            margin-right  : $navbar-padding-x;
+            @include font-size($navbar-brand-font-size);
+            line-height: inherit;
+            white-space: nowrap;
+
+            @include hover-focus() {
+                text-decoration: none;
+            }
+        }
+
+        .navbar-nav {
+            display       : flex;
+            flex-direction: column; // cannot use `inherit` to get the `.navbar`s value
+            padding-left  : 0;
+            margin-bottom : 0;
+            list-style    : none;
+
+            .nav-link {
+                padding-right: 0;
+                padding-left : 0;
+            }
+
+            .dropdown-menu {
+                position: static;
+                float   : none;
+            }
+        }
+
+        .navbar-text {
+            display       : inline-block;
+            padding-top   : $nav-link-padding-y;
+            padding-bottom: $nav-link-padding-y;
+        }
+
+        .navbar-collapse {
+            flex-basis : 100%;
+            flex-grow  : 1;
+            // For always expanded or extra full navbars, ensure content aligns itself
+            // properly vertically. Can be easily overridden with flex utilities.
+            align-items: center;
+        }
+
+        .navbar-toggler {
+            padding: $navbar-toggler-padding-y $navbar-toggler-padding-x;
+            @include font-size($navbar-toggler-font-size);
+            line-height     : 1;
+            background-color: transparent; // remove default button style
+            border          : $border-width solid transparent; // remove default button style
+            @include border-radius($navbar-toggler-border-radius);
+
+            @include hover-focus() {
+                text-decoration: none;
+            }
+        }
+
+        .navbar-toggler-icon {
+            display        : inline-block;
+            width          : 1.5em;
+            height         : 1.5em;
+            vertical-align : middle;
+            content        : "";
+            background     : no-repeat center center;
+            background-size: 100% 100%;
+        }
+
+        .navbar-expand {
+            @each $breakpoint in map-keys($grid-breakpoints) {
+                $next : breakpoint-next($breakpoint, $grid-breakpoints);
+                $infix: breakpoint-infix($next, $grid-breakpoints);
+
+                &#{$infix} {
+                    @include media-breakpoint-down($breakpoint) {
+                        %container-navbar-expand-#{$breakpoint} {
+                            padding-right: 0;
+                            padding-left : 0;
+                        }
+
+                        >.container,
+                        >.container-fluid {
+                            @extend %container-navbar-expand-#{$breakpoint};
+                        }
+
+                        @each $size,
+                        $container-max-width in $container-max-widths {
+                            >.container#{breakpoint-infix($size, $container-max-widths)} {
+                                @extend %container-navbar-expand-#{$breakpoint};
+                            }
+                        }
+                    }
+
+                    @include media-breakpoint-up($next) {
+                        flex-flow      : row nowrap;
+                        justify-content: flex-start;
+
+                        .navbar-nav {
+                            flex-direction: row;
+
+                            .dropdown-menu {
+                                position: absolute;
+                            }
+
+                            .nav-link {
+                                padding-right: $navbar-nav-link-padding-x;
+                                padding-left : $navbar-nav-link-padding-x;
+                            }
+                        }
+
+                        %container-nesting-#{$breakpoint} {
+                            flex-wrap: nowrap;
+                        }
+
+                        >.container,
+                        >.container-fluid {
+                            @extend %container-nesting-#{$breakpoint};
+                        }
+
+                        @each $size,
+                        $container-max-width in $container-max-widths {
+                            >.container#{breakpoint-infix($size, $container-max-widths)} {
+                                @extend %container-nesting-#{$breakpoint};
+                            }
+                        }
+
+                        .navbar-collapse {
+                            display: flex !important; // stylelint-disable-line declaration-no-important
+
+                            // Changes flex-bases to auto because of an IE10 bug
+                            flex-basis: auto;
+                        }
+
+                        .navbar-toggler {
+                            display: none;
+                        }
+                    }
+                }
+            }
+        }
+
+        .navbar-light {
+            .navbar-brand {
+                color: $navbar-light-brand-color;
+
+                @include hover-focus() {
+                    color: $navbar-light-brand-hover-color;
+                }
+            }
+
+            .navbar-nav {
+                .nav-link {
+                    color: $navbar-light-color;
+
+                    @include hover-focus() {
+                        color: $navbar-light-hover-color;
+                    }
+
+                    &.disabled {
+                        color: $navbar-light-disabled-color;
+                    }
+                }
+
+                .show>.nav-link,
+                .active>.nav-link,
+                .nav-link.show,
+                .nav-link.active {
+                    color: $navbar-light-active-color;
+                }
+            }
+
+            .navbar-toggler {
+                color       : $navbar-light-color;
+                border-color: $navbar-light-toggler-border-color;
+            }
+
+            .navbar-toggler-icon {
+                background-image: escape-svg($navbar-light-toggler-icon-bg);
+            }
+
+            .navbar-text {
+                color: $navbar-light-color;
+
+                a {
+                    color: $navbar-light-active-color;
+
+                    @include hover-focus() {
+                        color: $navbar-light-active-color;
+                    }
+                }
+            }
+        }
+
+        .navbar-dark {
+            .navbar-brand {
+                color: $navbar-white-brand-color;
+
+                @include hover-focus() {
+                    color: $navbar-white-brand-hover-color;
+                }
+            }
+
+            .navbar-nav {
+                .nav-link {
+                    color: $navbar-white-color;
+
+                    @include hover-focus() {
+                        color: $navbar-white-hover-color;
+                    }
+
+                    &.disabled {
+                        color: $navbar-white-disabled-color;
+                    }
+                }
+
+                .show>.nav-link,
+                .active>.nav-link,
+                .nav-link.show,
+                .nav-link.active {
+                    color: $navbar-green-active-color;
+                }
+            }
+
+            .navbar-toggler {
+                color       : $navbar-white-color;
+                border-color: $navbar-white-toggler-border-color;
+            }
+
+            .navbar-toggler-icon {
+                background-image: escape-svg($navbar-white-toggler-icon-bg);
+            }
+
+            .navbar-text {
+                color: $navbar-dark-color;
+
+                a {
+                    color: $navbar-dark-active-color;
+
+                    @include hover-focus() {
+                        color: $navbar-dark-active-color;
+                    }
+                }
+            }
+        }
+
+        @mixin nav-divider($color: $nav-divider-color, $margin-y: $nav-divider-margin-y, $ignore-warning: false) {
+            height    : 0;
+            margin    : $margin-y 0;
+            overflow  : hidden;
+            border-top: 1px solid $color;
+            @include deprecate("The `nav-divider()` mixin", "v4.4.0", "v5", $ignore-warning);
+        }
+
+        .btn {
+            display         : inline-block;
+            font-family     : $btn-font-family;
+            font-weight     : $btn-font-weight;
+            color           : $body-color;
+            text-align      : center;
+            text-decoration : if($link-decoration==none, null, none);
+            white-space     : $btn-white-space;
+            vertical-align  : middle;
+            user-select     : none;
+            background-color: transparent;
+            border          : $btn-border-width solid transparent;
+            @include button-size($btn-padding-y, $btn-padding-x, $btn-font-size, $btn-line-height, $btn-border-radius);
+            @include transition($btn-transition);
+
+            @include hover() {
+                color          : $body-color;
+                text-decoration: none;
+            }
+
+            &:focus,
+            &.focus {
+                outline   : 0;
+                box-shadow: $btn-focus-box-shadow;
+            }
+
+            // Disabled comes first so active can properly restyle
+            &.disabled,
+            &:disabled {
+                opacity: $btn-disabled-opacity;
+                @include box-shadow(none);
+            }
+
+            &:not(:disabled):not(.disabled) {
+                cursor: if($enable-pointer-cursor-for-buttons, pointer, null);
+
+                &:active,
+                &.active {
+                    @include box-shadow($btn-active-box-shadow);
+
+                    &:focus {
+                        @include box-shadow($btn-focus-box-shadow, $btn-active-box-shadow);
+                    }
+                }
+            }
+        }
+
+        a.btn.disabled,
+        fieldset:disabled a.btn {
+            pointer-events: none;
+        }
+
+        @each $color,
+        $value in $theme-colors {
+            .btn-#{$color} {
+                @include button-variant($value, $value);
+            }
+        }
+
+        @each $color,
+        $value in $theme-colors {
+            .btn-outline-#{$color} {
+                @include button-outline-variant($value);
+            }
+        }
+
+        .btn-link {
+            font-weight    : $font-weight-normal;
+            color          : $link-color;
+            text-decoration: $link-decoration;
+
+            @include hover() {
+                color          : $link-hover-color;
+                text-decoration: $link-hover-decoration;
+            }
+
+            &:focus,
+            &.focus {
+                text-decoration: $link-hover-decoration;
+            }
+
+            &:disabled,
+            &.disabled {
+                color         : $btn-link-disabled-color;
+                pointer-events: none;
+            }
+
+            .btn-lg {
+                @include button-size($btn-padding-y-lg, $btn-padding-x-lg, $btn-font-size-lg, $btn-line-height-lg, $btn-border-radius-lg);
+            }
+
+            .btn-sm {
+                @include button-size($btn-padding-y-sm, $btn-padding-x-sm, $btn-font-size-sm, $btn-line-height-sm, $btn-border-radius-sm);
+            }
+
+            .btn-block {
+                display: block;
+                width  : 100%;
+
+                // Vertically space out multiple block buttons
+                +.btn-block {
+                    margin-top: $btn-block-spacing-y;
+                }
+            }
+
+            // Specificity overrides
+            input[type="submit"],
+            input[type="reset"],
+            input[type="button"] {
+                &.btn-block {
+                    width: 100%;
+                }
+            }
+
+            @mixin button-variant($background, $border, $hover-background: darken($background, 7.5%), $hover-border: darken($border, 10%), $active-background: darken($background, 10%), $active-border: darken($border, 12.5%)) {
+                color: color-yiq($background);
+                @include gradient-bg($background);
+                border-color: $border;
+                @include box-shadow($btn-box-shadow);
+
+                @include hover {
+                    color: color-yiq($hover-background);
+                    @include gradient-bg($hover-background);
+                    border-color: $hover-border;
+                }
+
+                &:focus,
+                &.focus {
+
+                    // Avoid using mixin so we can pass custom focus shadow properly
+                    @if $enable-shadows {
+                        box-shadow: $btn-box-shadow, 0 0 0 $btn-focus-width rgba($border, .5);
+                    }
+
+                    @else {
+                        box-shadow: 0 0 0 $btn-focus-width rgba($border, .5);
+                    }
+                }
+
+                // Disabled comes first so active can properly restyle
+                &.disabled,
+                &:disabled {
+                    color           : color-yiq($background);
+                    background-color: $background;
+                    border-color    : $border;
+                }
+
+                &:not(:disabled):not(.disabled):active,
+                &:not(:disabled):not(.disabled).active,
+                .show>&.dropdown-toggle {
+                    color           : color-yiq($active-background);
+                    background-color: $active-background;
+
+                    @if $enable-gradients {
+                        background-image: none; // Remove the gradient for the pressed/active state
+                    }
+
+                    border-color: $active-border;
+
+                    &:focus {
+
+                        // Avoid using mixin so we can pass custom focus shadow properly
+                        @if $enable-shadows {
+                            box-shadow: $btn-active-box-shadow, 0 0 0 $btn-focus-width rgba($border, .5);
+                        }
+
+                        @else {
+                            box-shadow: 0 0 0 $btn-focus-width rgba($border, .5);
+                        }
+                    }
+                }
+            }
+
+            @mixin button-outline-variant($color, $color-hover: color-yiq($color), $active-background: $color, $active-border: $color) {
+                color           : $color;
+                background-color: transparent;
+                background-image: none;
+                border-color    : $color;
+
+                &:hover {
+                    color           : $color-hover;
+                    background-color: $active-background;
+                    border-color    : $active-border;
+                }
+
+                &:focus,
+                &.focus {
+                    box-shadow: 0 0 0 $btn-focus-width rgba($color, .5);
+                }
+
+                &.disabled,
+                &:disabled {
+                    color           : $color;
+                    background-color: transparent;
+                }
+
+                &:not(:disabled):not(.disabled):active,
+                &:not(:disabled):not(.disabled).active,
+                .show>&.dropdown-toggle {
+                    color           : color-yiq($active-background);
+                    background-color: $active-background;
+                    border-color    : $active-border;
+
+                    &:focus {
+
+                        // Avoid using mixin so we can pass custom focus shadow properly
+                        @if $enable-shadows and $btn-active-box-shadow !=none {
+                            box-shadow: $btn-active-box-shadow, 0 0 0 $btn-focus-width rgba($color, .5);
+                        }
+
+                        @else {
+                            box-shadow: 0 0 0 $btn-focus-width rgba($color, .5);
+                        }
+                    }
+                }
+            }
+
+            // Button sizes
+            @mixin button-size($padding-y, $padding-x, $font-size, $line-height, $border-radius) {
+                padding    : $padding-y $padding-x;
+                font-size  : $font-size;
+                line-height: $line-height;
+
+                // Manually declare to provide an override to the browser default
+                @if $enable-rounded {
+                    border-radius: $border-radius;
+                }
+
+                @else {
+                    border-radius: 0;
+                }
+            }
